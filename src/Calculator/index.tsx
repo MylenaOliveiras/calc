@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import Button from "./Components/Button";
 import Display from "./Components/Display";
 
@@ -9,7 +9,13 @@ function Calculator() {
   const [operator, setOperator] = useState("");
   const [input, setInput] = useState("");
 
-  const OnClickNumber = (value: string) => {
+  const handleClickNumber = (e: MouseEvent<HTMLInputElement> | string) => {
+    let value: string;
+    if (typeof e === "string") {
+      value = e;
+    } else {
+      value = e.currentTarget.value;
+    }
     if (operator === "") {
       setFirstValue((prevValue) => parseFloat(prevValue + value));
     } else {
@@ -17,7 +23,7 @@ function Calculator() {
     }
   };
 
-  function onClickMoreOrLess() {
+  function handleClickMoreOrLess() {
     if (operator === "") {
       setFirstValue(firstValue * -1);
     } else {
@@ -25,14 +31,14 @@ function Calculator() {
     }
   }
 
-  const OnClear = () => {
+  const handleClickOnClear = () => {
     setFirstValue(0);
     setSecondValue(0);
     setResult(0);
     setOperator("");
   };
 
-  const OnClickOperator = (a: number, b: number, operator: string) => {
+  const handleClickOperator = (a: number, b: number, operator: string) => {
     switch (operator) {
       case "+":
         setResult(a + b);
@@ -54,8 +60,18 @@ function Calculator() {
     }
   };
 
-  function OnClickEqual() {
-    OnClickOperator(firstValue, secondValue, operator);
+  function handleOperator(e: MouseEvent<HTMLInputElement> | string) {
+    let symbol: string;
+    if (typeof e === "string") {
+      symbol = e;
+    } else {
+      symbol = e.currentTarget.value;
+    }
+    setOperator(symbol);
+  }
+
+  function handleClickEqual() {
+    handleClickOperator(firstValue, secondValue, operator);
   }
 
   useEffect(() => {
@@ -77,32 +93,81 @@ function Calculator() {
     setInput(newInput);
   }, [firstValue, secondValue, operator, input]);
 
+  const handleClickDot = () => {
+    if (operator === "") {
+      setFirstValue((prevValue) => parseFloat(prevValue + ".1"));
+    } else {
+      setSecondValue((prevValue) => parseFloat(prevValue + ".1"));
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key;
+      switch (key) {
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+        case "0":
+          handleClickNumber(key);
+          break;
+        case "+":
+        case "-":
+        case "x":
+        case "%":
+        case "=":
+          handleOperator(key);
+          break;
+        case "/":
+          handleOperator("÷");
+          break;
+        case "Enter":
+          handleClickEqual();
+          break;
+        case "Backspace":
+          handleClickOnClear();
+          break;
+        default:
+          break;
+      }
+    };
+
+    const display = document.getElementById("display");
+
+    display?.addEventListener("keydown", handleKeyDown);
+    return () => {
+      display?.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleClickNumber, handleOperator, handleClickEqual, handleClickOnClear]);
+
   return (
     <div className="grid grid-cols-4 w-60 grid-rows-6 m-auto gap-1 h-96">
       <Display value={input} />
-      <Button value="A/C" onClick={OnClear} />
-      <Button value="+/-" onClick={onClickMoreOrLess} />
-      <Button value="%" onClick={() => setOperator("%")} />
-      <Button value="÷" onClick={() => setOperator("÷")} bgOrange />
-      <Button value={7} onClick={() => OnClickNumber("7")} />
-      <Button value={8} onClick={() => OnClickNumber("8")} />
-      <Button value={9} onClick={() => OnClickNumber("9")} />
-      <Button value="x" onClick={() => setOperator("x")} bgOrange />
-      <Button value={4} onClick={() => OnClickNumber("4")} />
-      <Button value={5} onClick={() => OnClickNumber("5")} />
-      <Button value={6} onClick={() => OnClickNumber("6")} />
-      <Button value="-" onClick={() => setOperator("-")} bgOrange />
-      <Button value={1} onClick={() => OnClickNumber("1")} />
-      <Button value={2} onClick={() => OnClickNumber("2")} />
-      <Button value={3} onClick={() => OnClickNumber("3")} />
-      <Button value="+" onClick={() => setOperator("+")} bgOrange />
-      <Button
-        value={0}
-        className="col-span-2"
-        onClick={() => OnClickNumber("0")}
-      />
-      <Button value="." />
-      <Button value="=" onClick={OnClickEqual} bgOrange />
+      <Button value="A/C" onClick={handleClickOnClear} />
+      <Button value="+/-" onClick={handleClickMoreOrLess} />
+      <Button value="%" onClick={handleOperator} />
+      <Button value="÷" onClick={handleOperator} bgOrange />
+      <Button value="7" onClick={handleClickNumber} />
+      <Button value="8" onClick={handleClickNumber} />
+      <Button value="9" onClick={handleClickNumber} />
+      <Button value="x" onClick={handleOperator} bgOrange />
+      <Button value="4" onClick={handleClickNumber} />
+      <Button value="5" onClick={handleClickNumber} />
+      <Button value="6" onClick={handleClickNumber} />
+      <Button value="-" onClick={handleOperator} bgOrange />
+      <Button value="1" onClick={handleClickNumber} />
+      <Button value="2" onClick={handleClickNumber} />
+      <Button value="3" onClick={handleClickNumber} />
+      <Button value="+" onClick={handleOperator} bgOrange />
+      <Button value="0" className="col-span-2" onClick={handleClickNumber} />
+      <Button value="." onClick={handleClickDot} />
+      <Button value="=" onClick={handleClickEqual} bgOrange />
     </div>
   );
 }
