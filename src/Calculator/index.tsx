@@ -1,105 +1,129 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import Button from "./Components/Button";
 import Display from "./Components/Display";
 
 function Calculator() {
-  const [firstValue, setFirstValue] = useState(0);
-  const [secondValue, setSecondValue] = useState(0);
-  const [result, setResult] = useState(0);
+  const [firstValue, setFirstValue] = useState("");
+  const [secondValue, setSecondValue] = useState("");
+  const [result, setResult] = useState("0");
   const [operator, setOperator] = useState("");
   const [input, setInput] = useState("");
+  const [isResult, setIsResult] = useState(false);
 
-  const handleClickNumber = (e: MouseEvent<HTMLInputElement> | string) => {
-    let value: string;
-    if (typeof e === "string") {
-      value = e;
-    } else {
-      value = e.currentTarget.value;
-    }
-    if (operator === "") {
-      setFirstValue((prevValue) => parseFloat(prevValue + value));
-    } else {
-      setSecondValue((prevValue) => parseFloat(prevValue + value));
-    }
-  };
+  const handleClickNumber = useCallback(
+    (e: MouseEvent<HTMLInputElement> | string) => {
+      let value: string;
+      if (typeof e === "string") {
+        value = e;
+      } else {
+        value = e.currentTarget.value;
+      }
+
+      if (isResult && !operator) {
+        setFirstValue(value);
+        setSecondValue("");
+        setOperator("");
+        setIsResult(false);
+        return;
+      }
+
+      (operator ? setSecondValue : setFirstValue)((prevValue) =>
+        prevValue === "0" ? value : prevValue + value
+      );
+    },
+    [operator, isResult]
+  );
 
   function handleClickMoreOrLess() {
     if (operator === "") {
-      setFirstValue(firstValue * -1);
+      setFirstValue(String(parseFloat(firstValue) * -1));
     } else {
-      setSecondValue(secondValue * -1);
+      setSecondValue(String(parseFloat(secondValue) * -1));
     }
   }
 
-  const handleClickOnClear = () => {
-    setFirstValue(0);
-    setSecondValue(0);
-    setResult(0);
+  const handleClickOnClear = useCallback(() => {
+    setFirstValue("");
+    setSecondValue("");
+    setResult("0");
     setOperator("");
-  };
+  }, []);
 
-  const handleClickOperator = (a: number, b: number, operator: string) => {
+  const handleClickOperator = (a: string, b: string, operator: string) => {
+    const numA = parseFloat(a);
+    const numB = parseFloat(b);
     switch (operator) {
       case "+":
-        setResult(a + b);
+        setResult(String(numA + numB));
         break;
       case "-":
-        setResult(a - b);
+        setResult(String(numA - numB));
         break;
       case "x":
-        setResult(a * b);
+        setResult(String(numA * numB));
+        break;
+      case "*":
+        setResult(String(numA * numB));
         break;
       case "÷":
-        setResult(a / b);
+        setResult(String(numA / numB));
         break;
       case "%":
-        setResult((a * b) / 100);
+        setResult(String((numA * numB) / 100));
         break;
       default:
         break;
     }
   };
 
-  function handleOperator(e: MouseEvent<HTMLInputElement> | string) {
-    let symbol: string;
-    if (typeof e === "string") {
-      symbol = e;
-    } else {
-      symbol = e.currentTarget.value;
-    }
-    setOperator(symbol);
-  }
+  const handleOperator = useCallback(
+    (e: MouseEvent<HTMLInputElement> | string) => {
+      let symbol: string;
+      if (typeof e === "string") {
+        symbol = e;
+      } else {
+        symbol = e.currentTarget.value;
+      }
+      setOperator(symbol);
+    },
+    []
+  );
 
-  function handleClickEqual() {
+  const handleClickEqual = useCallback(() => {
     handleClickOperator(firstValue, secondValue, operator);
-  }
+    setIsResult(true);
+  }, [firstValue, secondValue, operator]);
 
   useEffect(() => {
-    if (result !== 0) {
-      setFirstValue(result);
-      setSecondValue(0);
+    if (result !== "" && result !== null && result !== undefined) {
+      setFirstValue(String(result));
+      setSecondValue("");
       setOperator("");
     }
-  }, [setFirstValue, setSecondValue, setOperator, result]);
+  }, [result]);
 
   useEffect(() => {
     let newInput = `${firstValue}`;
     if (operator !== "") {
       newInput += ` ${operator}`;
-      if (secondValue !== 0) {
+      if (secondValue !== "") {
         newInput += ` ${secondValue}`;
       }
     }
     setInput(newInput);
   }, [firstValue, secondValue, operator, input]);
 
-  const handleClickDot = () => {
+  const handleClickDot = useCallback(() => {
     if (operator === "") {
-      setFirstValue((prevValue) => parseFloat(prevValue + ".1"));
+      setFirstValue((prevValue) =>
+        prevValue.includes(".") ? prevValue : prevValue + "."
+      );
     } else {
-      setSecondValue((prevValue) => parseFloat(prevValue + ".1"));
+      setSecondValue((prevValue) =>
+        prevValue.includes(".") ? prevValue : prevValue + "."
+      );
     }
-  };
+  }, [operator]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -120,12 +144,19 @@ function Calculator() {
         case "+":
         case "-":
         case "x":
+        case "*":
         case "%":
         case "=":
           handleOperator(key);
           break;
         case "/":
           handleOperator("÷");
+          break;
+        case ".":
+          handleClickDot();
+          break;
+        case ",":
+          handleClickDot();
           break;
         case "Enter":
           handleClickEqual();
@@ -144,30 +175,56 @@ function Calculator() {
     return () => {
       display?.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleClickNumber, handleOperator, handleClickEqual, handleClickOnClear]);
+  }, [
+    handleClickNumber,
+    handleOperator,
+    handleClickEqual,
+    handleClickOnClear,
+    handleClickDot,
+  ]);
 
   return (
     <div className="grid grid-cols-4 w-60 grid-rows-6 m-auto gap-1 h-96">
       <Display value={input} />
-      <Button value="A/C" onClick={handleClickOnClear} />
-      <Button value="+/-" onClick={handleClickMoreOrLess} />
-      <Button value="%" onClick={handleOperator} />
-      <Button value="÷" onClick={handleOperator} bgOrange />
+      <Button
+        value="A/C"
+        onClick={handleClickOnClear}
+        isOperatorButton
+        className="pb-1"
+      />
+      <Button
+        value="+/-"
+        onClick={handleClickMoreOrLess}
+        isOperatorButton
+        className="pb-1"
+      />
+      <Button
+        value="%"
+        onClick={handleOperator}
+        isOperatorButton
+        className="pb-1"
+      />
+      <Button
+        value="÷"
+        onClick={handleOperator}
+        isOperatorButton
+        className="pb-1"
+      />
       <Button value="7" onClick={handleClickNumber} />
       <Button value="8" onClick={handleClickNumber} />
       <Button value="9" onClick={handleClickNumber} />
-      <Button value="x" onClick={handleOperator} bgOrange />
+      <Button value="x" onClick={handleOperator} isOperatorButton />
       <Button value="4" onClick={handleClickNumber} />
       <Button value="5" onClick={handleClickNumber} />
       <Button value="6" onClick={handleClickNumber} />
-      <Button value="-" onClick={handleOperator} bgOrange />
+      <Button value="-" onClick={handleOperator} isOperatorButton />
       <Button value="1" onClick={handleClickNumber} />
       <Button value="2" onClick={handleClickNumber} />
       <Button value="3" onClick={handleClickNumber} />
-      <Button value="+" onClick={handleOperator} bgOrange />
+      <Button value="+" onClick={handleOperator} isOperatorButton />
       <Button value="0" className="col-span-2" onClick={handleClickNumber} />
       <Button value="." onClick={handleClickDot} />
-      <Button value="=" onClick={handleClickEqual} bgOrange />
+      <Button value="=" onClick={handleClickEqual} isOperatorButton />
     </div>
   );
 }
