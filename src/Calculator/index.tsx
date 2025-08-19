@@ -3,7 +3,7 @@ import Button from "./Components/Button";
 import Display from "./Components/Display";
 
 function Calculator() {
-  const [firstValue, setFirstValue] = useState("");
+  const [firstValue, setFirstValue] = useState("0");
   const [secondValue, setSecondValue] = useState("");
   const [result, setResult] = useState("0");
   const [operator, setOperator] = useState("");
@@ -35,15 +35,17 @@ function Calculator() {
   );
 
   function handleClickMoreOrLess() {
-    if (operator === "") {
-      setFirstValue(String(parseFloat(firstValue) * -1));
-    } else {
-      setSecondValue(String(parseFloat(secondValue) * -1));
+    if (firstValue || secondValue) {
+      if (operator === "") {
+        setFirstValue(String(parseFloat(firstValue) * -1));
+      } else {
+        setSecondValue(String(parseFloat(secondValue) * -1));
+      }
     }
   }
 
   const handleClickOnClear = useCallback(() => {
-    setFirstValue("");
+    setFirstValue("0");
     setSecondValue("");
     setResult("0");
     setOperator("");
@@ -95,12 +97,12 @@ function Calculator() {
   }, [firstValue, secondValue, operator]);
 
   useEffect(() => {
-    if (result !== "" && result !== null && result !== undefined) {
+    if (isResult) {
       setFirstValue(String(result));
       setSecondValue("");
       setOperator("");
     }
-  }, [result]);
+  }, [result, isResult]);
 
   useEffect(() => {
     let newInput = `${firstValue}`;
@@ -169,11 +171,9 @@ function Calculator() {
       }
     };
 
-    const display = document.getElementById("display");
-
-    display?.addEventListener("keydown", handleKeyDown);
+    document?.addEventListener("keydown", handleKeyDown);
     return () => {
-      display?.removeEventListener("keydown", handleKeyDown);
+      document?.removeEventListener("keydown", handleKeyDown);
     };
   }, [
     handleClickNumber,
